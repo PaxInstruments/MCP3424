@@ -25,52 +25,67 @@ User functions:
 #define MCP3424_ADDRESS 0X69
 
 // Define configuration register bits and addresses
-#define MCP342X_GAIN_FIELD 0X03 // PGA field
 #define MCP342X_GAIN_X1    0X00 // PGA gain X1
 #define MCP342X_GAIN_X2    0X01 // PGA gain X2
 #define MCP342X_GAIN_X4    0X02 // PGA gain X4
 #define MCP342X_GAIN_X8    0X03 // PGA gain X8
 
-#define MCP342X_RES_FIELD  0X0C // resolution/rate field
-#define MCP342X_RES_SHIFT  2    // shift to low bits
 #define MCP342X_12_BIT     0X00 // 12-bit 240 SPS
-#define MCP342X_14_BIT     0X04 // 14-bit 60 SPS
-#define MCP342X_16_BIT     0X08 // 16-bit 15 SPS
-#define MCP342X_18_BIT     0X0C // 18-bit 3.75 SPS
+#define MCP342X_14_BIT     0X01 // 14-bit 60 SPS
+#define MCP342X_16_BIT     0X02 // 16-bit 15 SPS
+//#define MCP342X_18_BIT     0X03 // 18-bit 3.75 SPS
+// NOTE: Need to extend the measurement routine to support 18-bit operations
+#define MCP342X_RES_FIELD  0x03 // Resolution bitfield
 
 #define MCP342X_CONTINUOUS 0X10 // 1 = continuous, 0 = one-shot
 
-#define MCP342X_CHAN_FIELD 0X60 // channel field
-#define MCP342X_CHANNEL_1  0X00 // select MUX channel 1
-#define MCP342X_CHANNEL_2  0X20 // select MUX channel 2
-#define MCP342X_CHANNEL_3  0X40 // select MUX channel 3
-#define MCP342X_CHANNEL_4  0X60 // select MUX channel 4
+#define MCP342X_CHANNEL(n)      (uint8_t)(((n) & 0x03) << 5)
+#define MCP342X_RESOLUTION(n)   (uint8_t)(((n) & 0x03) << 2)
+#define MCP342X_GAIN(n)         (uint8_t)(((n) & 0x03) << 0)
 
 #define MCP342X_START      0X80 // write: start a conversion
 #define MCP342X_BUSY       0X80 // read: output not ready
 
+#define ERROR_NO_ERROR          0
+#define ERROR_READ_TIMEOUT      1
 
-// constructor
+
 class MCP3424
 {
-  public:
-     // constructor
-     MCP3424(byte address, byte gain, byte res);
-     // functions
-     void MCP3424Write(byte msg);
-     int getMvDivisor();
-     long readData();
-     void setChannel(byte chan);
-     double getChannelmV(byte chan);
-     // variables
-     byte adcConfig;
-     uint16_t mvDivisor;
-  private:
-     // private variables
-     byte _address;
-     byte _res;
-     byte _gain;
+public:
+    // @param address (input) I2C bus address of the device
+    // @param gain (input) Measurement gain multiplier (1,2,4,8)
+    // @param resolution (input) ADC resolution (0,1,2,4)
+    MCP3424(uint8_t address, uint8_t gain, uint8_t resolution);
 
+    // Initialize the MCP3424
+    void begin();
+
+    // Start a one-shot channel measurement
+    // @param channel (input) Analog input to read (1-4)
+    void startMeasurement(uint8_t channel);
+
+    // Test if a measurement is ready. Use getMeasurement() to return
+    // the value of the result.
+    // @return True if measurement was ready, false otherwise
+    bool measurementReady();
+
+    // Get the result of the last channel measurement
+    // @param value (output) Measured value of channel, in mV
+    double getMeasurement();
+
+private:
+    // Update the configuration register on the MCP3424
+    // @param message (output) byte to write to the 
+    void MCP3424WriteConfig(uint8_t value);
+
+    // Get the divisor for converting a measurement into mV
+    int getMvDivisor();
+
+    const int address;      // I2C bus address
+    const uint8_t resolution;   // ADC resolution
+    const uint8_t gain;         // Gain
+    double value;               // Last measurement result
 };
 
 //#endif
