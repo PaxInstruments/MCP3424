@@ -72,7 +72,7 @@ public:
 
     // Get the result of the last channel measurement
     // @param value (output) Measured value of channel, in mV
-    int getMeasurementUv();
+    int32_t getMeasurementUv();
 
 private:
     // Update the configuration register on the MCP3424
@@ -85,7 +85,7 @@ private:
     const int address;      // I2C bus address
     const uint8_t resolution;   // ADC resolution
     const uint8_t gain;         // Gain
-    int value;                  // Last measurement result, in uV
+    int32_t value;                  // Last measurement result, in uV
 };
 
 //#endif
