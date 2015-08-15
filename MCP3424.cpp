@@ -7,6 +7,7 @@ written by jeroen cappaert (c) for nanosatisfi August 2012
 
 */
 
+#include <limits.h>
 #include <Arduino.h>
 #include <Wire.h>
 #include "MCP3424.h"
@@ -67,7 +68,7 @@ bool MCP3424::measurementReady() {
     }
 
     // Read the first two bytes into the correct positions
-    // for a uint16_t
+    // for an int16_t
     for (uint8_t i = 0; i < 2; i++) {
         rawValue = (rawValue << 8) | Wire.read();
     }
@@ -87,11 +88,20 @@ bool MCP3424::measurementReady() {
         return false;
     }
 
-    value = (double)rawValue/getMvDivisor();
+    // If we're out of range, set the output to INT_MAX as a signal
+    if(rawValue == 0x7FFF) {
+        value = INT_MAX;
+    }
+    else if(rawValue == -0x8000) {
+        value = INT_MIN;
+    }
+    else {
+        value = (((int)rawValue)*1000)/getMvDivisor();
+    }
 
     return true;
 }
 
-double MCP3424::getMeasurement() {
+int MCP3424::getMeasurementUv() {
     return value;
 }
